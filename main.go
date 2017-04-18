@@ -8,9 +8,9 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"time"
-  "sync"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/cactus/go-statsd-client/statsd"
 )
@@ -20,7 +20,7 @@ var (
 	httpClient        *http.Client
 	curStatsdEndpoint = ""
 	newStatsdEndpoint = ""
-  endPointMutex     sync.Mutex
+	endPointMutex     sync.Mutex
 )
 
 func main() {
@@ -35,14 +35,14 @@ func main() {
 	go Ping("8.8.8.8")
 	go Ping("8.8.4.4")
 	go Disk("/")
-  // go generateGauge("myapp.mygauge1", 555)
-  // go generateGauge("myapp.mygauge2", 9999)
+	// go generateGauge("myapp.mygauge1", 555)
+	// go generateGauge("myapp.mygauge2", 9999)
 
-  <- make(chan interface{})
+	<-make(chan interface{})
 }
 
 func generateGauge(name string, max int) {
-  delay := func() {}
+	delay := func() {}
 	for {
 		delay()
 		delay = func() { <-time.After(2 * time.Second) }
@@ -51,21 +51,26 @@ func generateGauge(name string, max int) {
 	}
 }
 
-func sendGauge(name string, val int64) {
+func sendGauge(name string, val int64) error {
 	maybeReplaceStatsdClient()
 	if statsdClient == nil {
-		return
+		fmt.Println("statsd client empty, will not send guage")
+		return nil
 	}
 
-  //fmt.Println("Sending gauge")
-	statsdClient.Gauge(name, val, 1)
+	//fmt.Println("Sending gauge")
+	if err := statsdClient.Gauge(name, val, 1); err != nil {
+		fmt.Printf("Failed to send guage: %v\n", err)
+		return err
+	}
+	return nil
 }
 
 func maybeReplaceStatsdClient() {
-  endPointMutex.Lock()
-  defer endPointMutex.Unlock()
+	endPointMutex.Lock()
+	defer endPointMutex.Unlock()
 
-	if curStatsdEndpoint == newStatsdEndpoint {
+	if statsdClient != nil && curStatsdEndpoint == newStatsdEndpoint {
 		return
 	}
 
@@ -86,7 +91,7 @@ func maybeReplaceStatsdClient() {
 		return
 	}
 
-  fmt.Println("Made new statsd client, pointing at", curStatsdEndpoint)
+	fmt.Println("Made new statsd client, pointing at", curStatsdEndpoint)
 	statsdClient = client
 }
 
@@ -104,7 +109,7 @@ func monitorStatsdEndpoint() {
 		}
 
 		url := fmt.Sprintf("%s/console/v1/option?name=statsd.endpoint", apiEndpoint)
-    fmt.Printf("Calling %s\n", url)
+		fmt.Printf("Calling %s\n", url)
 		resp, err := httpClient.Get(url)
 		if err != nil {
 			fmt.Printf("%s: ERROR: %v\n", url, err)
@@ -113,11 +118,11 @@ func monitorStatsdEndpoint() {
 
 		if resp.StatusCode != http.StatusOK {
 			fmt.Printf("%v: BAD STATUS: %v\n", resp.StatusCode, err)
-      continue
+			continue
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
-    resp.Body.Close()
+		resp.Body.Close()
 		if err != nil {
 			fmt.Printf("Could not read responce body: %v\n", err)
 			continue
