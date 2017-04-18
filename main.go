@@ -51,14 +51,19 @@ func generateGauge(name string, max int) {
 	}
 }
 
-func sendGauge(name string, val int64) {
+func sendGauge(name string, val int64) error {
 	maybeReplaceStatsdClient()
 	if statsdClient == nil {
-		return
+		fmt.Println("statsd client empty, will not send guage")
+		return nil
 	}
 
 	//fmt.Println("Sending gauge")
-	statsdClient.Gauge(name, val, 1)
+	if err := statsdClient.Gauge(name, val, 1); err != nil {
+		fmt.Printf("Failed to send guage: %v\n", err)
+		return err
+	}
+	return nil
 }
 
 func maybeReplaceStatsdClient() {
