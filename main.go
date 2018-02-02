@@ -58,11 +58,12 @@ func sendGauge(name string, val int64) error {
 		return nil
 	}
 
-	//fmt.Println("Sending gauge")
+	fmt.Println("Sending gauge", name)
 	if err := statsdClient.Gauge(name, val, 1); err != nil {
 		fmt.Printf("Failed to send guage: %v\n", err)
 		return err
 	}
+	fmt.Println("Gauge", name, "sent")
 	return nil
 }
 
