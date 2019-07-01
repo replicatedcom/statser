@@ -131,6 +131,12 @@ func monitorStatsdEndpoint() {
 
 		fmt.Printf("Got new statsd endpoint: %s\n", body)
 		newStatsdEndpoint = string(body)
+
+		// NOTE: With modern container-based platforms with dynamic DNS statsd server might change
+		// its address when container gets rescheduled. As statsd packets are delivered over UDP,
+		// there's no easy way for the client to figure out that packets are going nowhere. This
+		// will force reconnection.
+		curStatsdEndpoint = ""
 	}
 }
 
